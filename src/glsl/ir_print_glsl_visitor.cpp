@@ -31,6 +31,10 @@
 
 static char* print_type(char* buffer, const glsl_type *t, bool arraySize);
 static char* print_type_post(char* buffer, const glsl_type *t, bool arraySize);
+// tmaniero
+class ir_print_glsl_visitor;
+static bool is_struct_type(const glsl_type *t);
+static char *print_struct_type(char* buffer, const char *pre, ir_variable* var, const glsl_type *t, ir_print_glsl_visitor *glsl_visitor);
 
 static inline const char* get_precision_string (glsl_precision p)
 {
@@ -50,7 +54,7 @@ struct ga_entry : public exec_node
 	{
 		assert(ir);
 		this->ir = ir;
-	}	
+	}
 	ir_instruction* ir;
 };
 
@@ -62,12 +66,12 @@ struct global_print_tracker {
 		var_hash = hash_table_ctor(0, hash_table_pointer_hash, hash_table_pointer_compare);
 		main_function_done = false;
 	}
-	
+
 	~global_print_tracker() {
 		hash_table_dtor (var_hash);
 		ralloc_free(mem_ctx);
 	}
-	
+
 	unsigned	var_counter;
 	hash_table*	var_hash;
 	exec_list	global_assignements;
@@ -82,7 +86,9 @@ public:
 		indentation = 0;
 		buffer = buf;
 		globals = globals_;
-		mode = mode_;
+        // tmaniero
+		mode = static_cast<PrintGlslMode>(mode_ & kPrintGlslMaskMode);
+        flags = static_cast<PrintGlslMode>(mode_ & kPrintGlslMaskFlags);
 		use_precision = use_precision_;
 		state = state_;
 	}
@@ -125,6 +131,7 @@ public:
 	global_print_tracker* globals;
 	const _mesa_glsl_parse_state* state;
 	PrintGlslMode mode;
+    PrintGlslMode flags;
 	bool	use_precision;
 };
 
@@ -149,10 +156,13 @@ _mesa_print_ir_glsl(exec_list *instructions,
 		if (state->EXT_frag_depth_enable)
 			ralloc_strcat (&buffer, "#extension GL_EXT_frag_depth : enable\n");
 	}
-	
+
+    // TODO tmaniero, write all structs for now
+#if 0
 	// remove unused struct declarations
 	do_remove_unused_typedecls(instructions);
-	
+#endif
+
 	global_print_tracker gtracker;
 
    foreach_iter(exec_list_iterator, iter, *instructions) {
@@ -215,7 +225,7 @@ void ir_print_glsl_visitor::print_precision (ir_instruction* ir, const glsl_type
 		return;
 	}
 	glsl_precision prec = precision_from_ir(ir);
-	
+
 	// skip precision for samplers that end up being lowp (default anyway) or undefined;
 	// except always emit it for shadowmap samplers (some drivers don't implement
 	// default EXT_shadow_samplers precision)
@@ -224,7 +234,7 @@ void ir_print_glsl_visitor::print_precision (ir_instruction* ir, const glsl_type
 		if (prec == glsl_precision_low || prec == glsl_precision_undefined)
 			return;
 	}
-	
+
 	if (prec == glsl_precision_high || prec == glsl_precision_undefined)
 	{
 		if (ir->ir_type == ir_type_function_signature)
@@ -273,7 +283,7 @@ void ir_print_glsl_visitor::visit(ir_variable *ir)
    };
 	
    const char *const interp[] = { "", "smooth ", "flat ", "noperspective " };
-	
+
 	int decormode = this->mode;
 	// GLSL 1.30 and up use "in" and "out" for everything
 	if (this->state->language_version >= 130)
@@ -298,15 +308,27 @@ void ir_print_glsl_visitor::visit(ir_variable *ir)
       print_var_name (ir);
       return;
    }
-	
-   ralloc_asprintf_append (&buffer, "%s%s%s%s",
-	  cent, inv, interp[ir->interpolation], mode[decormode][ir->mode]);
-   print_precision (ir, ir->type);
-   buffer = print_type(buffer, ir->type, false);
-   ralloc_asprintf_append (&buffer, " ");
-   print_var_name (ir);
-   buffer = print_type_post(buffer, ir->type, false);
-	
+
+   // tmaniero
+   if ((this->flags & kPrintGlslNoStruct) && is_struct_type(ir->type))
+   {
+       char pre[512];
+       sprintf(pre, "%s%s%s%s", cent, inv, interp[ir->interpolation], mode[decormode][ir->mode]);
+
+       buffer = print_struct_type(buffer, pre, ir, ir->type, this);
+   }
+   else
+   {
+       ralloc_asprintf_append (&buffer, "%s%s%s%s",
+           cent, inv, interp[ir->interpolation], mode[decormode][ir->mode]);
+       print_precision (ir, ir->type);
+
+       buffer = print_type(buffer, ir->type, false);
+       ralloc_asprintf_append (&buffer, " ");
+       print_var_name (ir);
+       buffer = print_type_post(buffer, ir->type, false);
+   }
+
 	if (ir->constant_value &&
 		ir->mode != ir_var_shader_in &&
 		ir->mode != ir_var_shader_out &&
@@ -358,7 +380,7 @@ void ir_print_glsl_visitor::visit(ir_function_signature *ir)
    indent();
    ralloc_asprintf_append (&buffer, "{\n");
    indentation++;
-	
+
 	// insert postponed global assigments
 	if (strcmp(ir->function()->name, "main") == 0)
 	{
@@ -522,7 +544,7 @@ static const char *const operator_vec_glsl_strs[] = {
 
 static bool is_binop_func_like(ir_expression_operation op, const glsl_type* type)
 {
-	if (op == ir_binop_equal || 
+	if (op == ir_binop_equal ||
 		op == ir_binop_nequal ||
 		op == ir_binop_mod ||
 		(op >= ir_binop_dot && op <= ir_binop_pow))
@@ -575,7 +597,7 @@ void ir_print_glsl_visitor::visit(ir_expression *ir)
 			ralloc_asprintf_append (&buffer, "%s (", operator_vec_glsl_strs[ir->operation-ir_binop_less]);
 		else
 			ralloc_asprintf_append (&buffer, "%s (", operator_glsl_strs[ir->operation]);
-		
+
 		if (ir->operands[0])
 			ir->operands[0]->accept(this);
 		ralloc_asprintf_append (&buffer, ", ");
@@ -631,7 +653,7 @@ void ir_print_glsl_visitor::visit(ir_texture *ir)
 	if (is_shadow)
 		sampler_uv_dim = 3;
 	const bool is_proj = (uv_dim > sampler_uv_dim);
-	
+
     // texture function name
     //ACS: shadow lookups and lookups with dimensionality included in the name were deprecated in 130
     if(state->language_version<130) 
@@ -643,7 +665,7 @@ void ir_print_glsl_visitor::visit(ir_texture *ir)
     {
         ralloc_asprintf_append (&buffer, "texture");
     }
-	
+
 	if (is_proj)
 		ralloc_asprintf_append (&buffer, "Proj");
 	if (ir->op == ir_txl)
@@ -659,7 +681,7 @@ void ir_print_glsl_visitor::visit(ir_texture *ir)
 			ralloc_asprintf_append (&buffer, "EXT");
 		}
 	}
-	
+
 	if(ir->op == ir_txd)
 	{
 		if(state->es_shader && state->EXT_shader_texture_lod_enable)
@@ -669,28 +691,28 @@ void ir_print_glsl_visitor::visit(ir_texture *ir)
 	}
 	
 	ralloc_asprintf_append (&buffer, " (");
-	
+
 	// sampler
 	ir->sampler->accept(this);
 	ralloc_asprintf_append (&buffer, ", ");
-	
+
 	// texture coordinate
 	ir->coordinate->accept(this);
-	
+
 	// lod bias
 	if (ir->op == ir_txb)
 	{
 		ralloc_asprintf_append (&buffer, ", ");
 		ir->lod_info.bias->accept(this);
 	}
-	
+
 	// lod
 	if (ir->op == ir_txl)
 	{
 		ralloc_asprintf_append (&buffer, ", ");
 		ir->lod_info.lod->accept(this);
 	}
-	
+
 	// grad
 	if (ir->op == ir_txd)
 	{
@@ -701,11 +723,11 @@ void ir_print_glsl_visitor::visit(ir_texture *ir)
 	}
 	
 	/*
-	
+
    if (ir->offset != NULL) {
       ir->offset->accept(this);
    }
-	
+
    if (ir->op != ir_txf) {
       if (ir->projector)
 	 ir->projector->accept(this);
@@ -764,7 +786,7 @@ void ir_print_glsl_visitor::visit(ir_swizzle *ir)
 	}
 
 	ir->val->accept(this);
-	
+
 	if (ir->val->type == glsl_type::float_type || ir->val->type == glsl_type::int_type)
 	{
 		if (ir->mask.num_components != 1)
@@ -791,16 +813,32 @@ void ir_print_glsl_visitor::visit(ir_dereference_variable *ir)
 void ir_print_glsl_visitor::visit(ir_dereference_array *ir)
 {
    ir->array->accept(this);
-   ralloc_asprintf_append (&buffer, "[");
-   ir->array_index->accept(this);
-   ralloc_asprintf_append (&buffer, "]");
+
+   // tmaniero
+   if ((flags & kPrintGlslNoStruct) && (is_struct_type(ir->type)))
+   {
+       ralloc_asprintf_append (&buffer, "_");
+       ir->array_index->accept(this);
+       //ralloc_asprintf_append (&buffer, "]");
+   }
+   else
+   {
+       ralloc_asprintf_append (&buffer, "[");
+       ir->array_index->accept(this);
+       ralloc_asprintf_append (&buffer, "]");
+   }
 }
 
 
 void ir_print_glsl_visitor::visit(ir_dereference_record *ir)
 {
    ir->record->accept(this);
-   ralloc_asprintf_append (&buffer, ".%s", ir->field);
+
+   // tmaniero
+    if (flags & kPrintGlslNoStruct)
+        ralloc_asprintf_append (&buffer, "_%s", ir->field);
+    else
+        ralloc_asprintf_append (&buffer, ".%s", ir->field);
 }
 
 
@@ -879,7 +917,7 @@ void ir_print_glsl_visitor::visit(ir_assignment *ir)
 		ralloc_asprintf_append(&buffer, "//"); // for the ; that will follow (ugly, I know)
 		return;
 	}
-	
+
 	// if RHS is ir_triop_vector_insert, then we have to do some special dance. If source expression is:
 	//   dst = vector_insert (a, b, idx)
 	// then emit it like:
@@ -1019,13 +1057,13 @@ ir_print_glsl_visitor::visit(ir_call *ir)
 		ralloc_asprintf_append(&buffer, "//"); // for the ; that will follow (ugly, I know)
 		return;
 	}
-	
+
 	if (ir->return_deref)
 	{
 		visit(ir->return_deref);
-		ralloc_asprintf_append (&buffer, " = ");		
+		ralloc_asprintf_append (&buffer, " = ");
 	}
-	
+
    ralloc_asprintf_append (&buffer, "%s (", ir->callee_name());
    bool first = true;
    foreach_iter(exec_list_iterator, iter, *ir) {
@@ -1207,7 +1245,7 @@ ir_print_glsl_visitor::visit(ir_loop_jump *ir)
 void
 ir_print_glsl_visitor::visit(ir_precision_statement *ir)
 {
-	ralloc_asprintf_append (&buffer, "%s", ir->precision_statement);
+    ralloc_asprintf_append (&buffer, "%s", ir->precision_statement);
 }
 
 void
@@ -1238,4 +1276,82 @@ void
 ir_print_glsl_visitor::visit(ir_end_primitive *ir)
 {
 	ralloc_asprintf_append (&buffer, "end-primitive-TODO");
+}
+// tmaniero
+static bool is_struct_type(const glsl_type *t)
+{
+    if (t->base_type == GLSL_TYPE_ARRAY)
+        return is_struct_type(t->fields.array);
+
+    if ((t->base_type == GLSL_TYPE_STRUCT) && (strncmp("gl_", t->name, 3) != 0))
+        return true;
+
+    return false;
+}
+
+static char *print_struct_type(char* buffer, const char *pre, ir_variable* var, const glsl_type *t, ir_print_glsl_visitor *glsl_visitor)
+{
+    /*
+    if (t->base_type == GLSL_TYPE_ARRAY) {
+        buffer = print_type(buffer, t->fields.array, true);
+        if (arraySize)
+            ralloc_asprintf_append (&buffer, "[%u]", t->length);
+    } else if ((t->base_type == GLSL_TYPE_STRUCT)
+        && (strncmp("gl_", t->name, 3) != 0)) {
+            ralloc_asprintf_append (&buffer, "%s", t->name);
+    } else {
+        ralloc_asprintf_append (&buffer, "%s", t->name);
+    }
+    */
+
+    if (t->base_type == GLSL_TYPE_ARRAY)
+    {
+        //buffer = print_type(buffer, t->fields.array, true);
+        /*if (arraySize)
+            ralloc_asprintf_append (&buffer, "[%u]", t->length);*/
+
+        for (unsigned int i = 0, ilength = t->length-1; i <= ilength; ++i)
+        {
+            const glsl_type *ts = t->fields.array;
+
+            for (unsigned int j = 0, jlength = ts->length-1; j <= jlength; ++j)
+            {
+                ralloc_asprintf_append(&buffer, "%s ", pre);
+
+                buffer = print_type(buffer, ts->fields.structure[j].type, false);
+                ralloc_asprintf_append (&buffer, " ");
+                //glsl_visitor->print_var_name(var);
+                ralloc_asprintf_append (&buffer, "%s_%d_%s", var->name, i, ts->fields.structure[j].name);
+                buffer = print_type_post(buffer, ts->fields.structure[j].type, false);
+                if ((j < jlength) || (i < ilength))
+                    ralloc_asprintf_append (&buffer, ";\n");
+            }
+        }
+
+    }
+    else if ((t->base_type == GLSL_TYPE_STRUCT) && (strncmp("gl_", t->name, 3) != 0))
+    {
+        for (unsigned int j = 0, jlength = t->length-1; j <= jlength; ++j)
+        {
+            ralloc_asprintf_append(&buffer, "%s ", pre);
+
+            buffer = print_type(buffer, t->fields.structure[j].type, false);
+            ralloc_asprintf_append (&buffer, " ");
+            //glsl_visitor->print_var_name(var);
+            ralloc_asprintf_append (&buffer, "%s_%s", var->name, t->fields.structure[j].name);
+            buffer = print_type_post(buffer, t->fields.structure[j].type, false);
+            if (j < jlength)
+                ralloc_asprintf_append (&buffer, ";\n");
+        }
+
+        //ralloc_asprintf_append (&buffer, "%s", t->name);
+    }
+    else
+    {
+        ralloc_asprintf_append (&buffer, "%s", t->name);
+    }
+
+    //ralloc_asprintf_append (&buffer, "ciao ");
+
+    return buffer;
 }
