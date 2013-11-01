@@ -1251,6 +1251,14 @@ ir_print_glsl_visitor::visit(ir_precision_statement *ir)
 void
 ir_print_glsl_visitor::visit(ir_typedecl_statement *ir)
 {
+    // tmaniero
+    if (this->flags & kPrintGlslNoStruct)
+    {
+        const glsl_type *const s = ir->type_decl;
+        ralloc_asprintf_append (&buffer, "// struct %s ", s->name);
+        return;
+    }
+
 	const glsl_type *const s = ir->type_decl;
 	ralloc_asprintf_append (&buffer, "struct %s {\n", s->name);
 
@@ -1291,6 +1299,7 @@ static bool is_struct_type(const glsl_type *t)
 
 static char *print_struct_type(char* buffer, const char *pre, ir_variable* var, const glsl_type *t, ir_print_glsl_visitor *glsl_visitor)
 {
+#if 0
     /*
     if (t->base_type == GLSL_TYPE_ARRAY) {
         buffer = print_type(buffer, t->fields.array, true);
@@ -1303,12 +1312,15 @@ static char *print_struct_type(char* buffer, const char *pre, ir_variable* var, 
         ralloc_asprintf_append (&buffer, "%s", t->name);
     }
     */
+#endif
 
     if (t->base_type == GLSL_TYPE_ARRAY)
     {
+#if 0
         //buffer = print_type(buffer, t->fields.array, true);
         /*if (arraySize)
             ralloc_asprintf_append (&buffer, "[%u]", t->length);*/
+#endif
 
         for (unsigned int i = 0, ilength = t->length-1; i <= ilength; ++i)
         {
@@ -1350,8 +1362,6 @@ static char *print_struct_type(char* buffer, const char *pre, ir_variable* var, 
     {
         ralloc_asprintf_append (&buffer, "%s", t->name);
     }
-
-    //ralloc_asprintf_append (&buffer, "ciao ");
 
     return buffer;
 }
