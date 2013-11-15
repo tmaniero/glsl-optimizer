@@ -84,6 +84,7 @@ public:
 	ir_print_glsl_visitor(char* buf, global_print_tracker* globals_, PrintGlslMode mode_, bool use_precision_, const _mesa_glsl_parse_state* state_)
 	{
 		indentation = 0;
+		expression_depth = 0;
 		buffer = buf;
 		globals = globals_;
         // tmaniero
@@ -99,6 +100,8 @@ public:
 
 
 	void indent(void);
+	void newline_indent();
+	void newline_deindent();
 	void print_var_name (ir_variable* v);
 	void print_precision (ir_instruction* ir, const glsl_type* type);
 
@@ -127,6 +130,7 @@ public:
 	void emit_assignment_part (ir_dereference* lhs, ir_rvalue* rhs, unsigned write_mask, ir_rvalue* dstIndex);
 	
 	int indentation;
+	int expression_depth;
 	char* buffer;
 	global_print_tracker* globals;
 	const _mesa_glsl_parse_state* state;
@@ -144,7 +148,12 @@ _mesa_print_ir_glsl(exec_list *instructions,
 	// print version & extensions
 	if (state) {
 		if (state->had_version_string)
-			ralloc_asprintf_append (&buffer, "#version %i\n", state->language_version);
+		{
+			ralloc_asprintf_append (&buffer, "#version %i", state->language_version);
+			if (state->es_shader && state->language_version >= 300)
+				ralloc_asprintf_append (&buffer, " es");
+			ralloc_asprintf_append (&buffer, "\n");
+		}
 		if (state->ARB_shader_texture_lod_enable)
 			ralloc_strcat (&buffer, "#extension GL_ARB_shader_texture_lod : enable\n");
 		if (state->EXT_shader_texture_lod_enable)
@@ -190,6 +199,26 @@ void ir_print_glsl_visitor::indent(void)
    for (int i = 0; i < indentation; i++)
       ralloc_asprintf_append (&buffer, "  ");
 }
+
+void ir_print_glsl_visitor::newline_indent()
+{
+	if (expression_depth % 4 == 0)
+	{
+		++indentation;
+		ralloc_asprintf_append (&buffer, "\n");
+		indent();
+	}
+}
+void ir_print_glsl_visitor::newline_deindent()
+{
+	if (expression_depth % 4 == 0)
+	{
+		--indentation;
+		ralloc_asprintf_append (&buffer, "\n");
+		indent();
+	}
+}
+
 
 void ir_print_glsl_visitor::print_var_name (ir_variable* v)
 {
@@ -247,17 +276,17 @@ void ir_print_glsl_visitor::print_precision (ir_instruction* ir, const glsl_type
 static char*
 print_type(char* buffer, const glsl_type *t, bool arraySize)
 {
-   if (t->base_type == GLSL_TYPE_ARRAY) {
-      buffer = print_type(buffer, t->fields.array, true);
-      if (arraySize)
-         ralloc_asprintf_append (&buffer, "[%u]", t->length);
-   } else if ((t->base_type == GLSL_TYPE_STRUCT)
-	      && (strncmp("gl_", t->name, 3) != 0)) {
-      ralloc_asprintf_append (&buffer, "%s", t->name);
-   } else {
-      ralloc_asprintf_append (&buffer, "%s", t->name);
-   }
-   return buffer;
+	if (t->base_type == GLSL_TYPE_ARRAY) {
+		buffer = print_type(buffer, t->fields.array, true);
+		if (arraySize)
+			ralloc_asprintf_append (&buffer, "[%u]", t->length);
+	} else if ((t->base_type == GLSL_TYPE_STRUCT)
+			   && (strncmp("gl_", t->name, 3) != 0)) {
+		ralloc_asprintf_append (&buffer, "%s", t->name);
+	} else {
+		ralloc_asprintf_append (&buffer, "%s", t->name);
+	}
+	return buffer;
 }
 
 static char*
@@ -273,41 +302,48 @@ print_type_post(char* buffer, const glsl_type *t, bool arraySize)
 
 void ir_print_glsl_visitor::visit(ir_variable *ir)
 {
-   const char *const cent = (ir->centroid) ? "centroid " : "";
-   const char *const inv = (ir->invariant) ? "invariant " : "";
-   const char *const mode[3][ir_var_mode_count] = 
-   {
-	{ "", "uniform ", "in ",        "out ",     "in ", "out ", "inout ", "", "", "" },
-	{ "", "uniform ", "attribute ", "varying ", "in ", "out ", "inout ", "", "", "" },
-	{ "", "uniform ", "varying ",   "out ",     "in ", "out ", "inout ", "", "", "" },
-   };
+	const char *const cent = (ir->centroid) ? "centroid " : "";
+	const char *const inv = (ir->invariant) ? "invariant " : "";
+	const char *const mode[3][ir_var_mode_count] =
+	{
+		{ "", "uniform ", "in ",        "out ",     "in ", "out ", "inout ", "", "", "" },
+		{ "", "uniform ", "attribute ", "varying ", "in ", "out ", "inout ", "", "", "" },
+		{ "", "uniform ", "varying ",   "out ",     "in ", "out ", "inout ", "", "", "" },
+	};
 	
-   const char *const interp[] = { "", "smooth ", "flat ", "noperspective " };
-
+	const char *const interp[] = { "", "smooth ", "flat ", "noperspective " };
+	
+	if (this->state->language_version >= 300 && ir->explicit_location)
+	{
+		const int binding_base = (this->state->target == vertex_shader ? (int)VERT_ATTRIB_GENERIC0 : (int)FRAG_RESULT_DATA0);
+		const int location = ir->location - binding_base;
+		ralloc_asprintf_append (&buffer, "layout(location=%d) ", location);
+	}
+	
 	int decormode = this->mode;
 	// GLSL 1.30 and up use "in" and "out" for everything
 	if (this->state->language_version >= 130)
 	{
 		decormode = 0;
 	}
-
-   // give an id to any variable defined in a function that is not an uniform
-   if ((this->mode == kPrintGlslNone && ir->mode != ir_var_uniform))
-   {
-     long id = (long)hash_table_find (globals->var_hash, ir);
-     if (id == 0)
-     {
-       id = ++globals->var_counter;
-       hash_table_insert (globals->var_hash, (void*)id, ir);
-     }
-   }
-
-   // keep invariant declaration for builtin variables
-   if (strstr(ir->name, "gl_") == ir->name) {
-      ralloc_asprintf_append (&buffer, "%s", inv);
-      print_var_name (ir);
-      return;
-   }
+	
+	// give an id to any variable defined in a function that is not an uniform
+	if ((this->mode == kPrintGlslNone && ir->mode != ir_var_uniform))
+	{
+		long id = (long)hash_table_find (globals->var_hash, ir);
+		if (id == 0)
+		{
+			id = ++globals->var_counter;
+			hash_table_insert (globals->var_hash, (void*)id, ir);
+		}
+	}
+	
+	// keep invariant declaration for builtin variables
+	if (strstr(ir->name, "gl_") == ir->name) {
+		ralloc_asprintf_append (&buffer, "%s", inv);
+		print_var_name (ir);
+		return;
+	}
 
    // tmaniero
    if ((this->flags & kPrintGlslNoStruct) && is_struct_type(ir->type))
@@ -319,14 +355,13 @@ void ir_print_glsl_visitor::visit(ir_variable *ir)
    }
    else
    {
-       ralloc_asprintf_append (&buffer, "%s%s%s%s",
-           cent, inv, interp[ir->interpolation], mode[decormode][ir->mode]);
-       print_precision (ir, ir->type);
-
-       buffer = print_type(buffer, ir->type, false);
-       ralloc_asprintf_append (&buffer, " ");
-       print_var_name (ir);
-       buffer = print_type_post(buffer, ir->type, false);
+        ralloc_asprintf_append (&buffer, "%s%s%s%s",
+    							cent, inv, interp[ir->interpolation], mode[decormode][ir->mode]);
+    	print_precision (ir, ir->type);
+    	buffer = print_type(buffer, ir->type, false);
+    	ralloc_asprintf_append (&buffer, " ");
+    	print_var_name (ir);
+    	buffer = print_type_post(buffer, ir->type, false);
    }
 
 	if (ir->constant_value &&
@@ -413,7 +448,7 @@ void ir_print_glsl_visitor::visit(ir_function *ir)
 
    foreach_iter(exec_list_iterator, iter, *ir) {
       ir_function_signature *const sig = (ir_function_signature *) iter.get();
-      if (!sig->is_builtin)
+      if (!sig->is_builtin())
 	 found_non_builtin_proto = true;
    }
    if (!found_non_builtin_proto)
@@ -496,7 +531,10 @@ static const char *const operator_glsl_strs[] = {
 	"+",
 	"-",
 	"*",
+	"*_imul_high_TODO",
 	"/",
+	"carry_TODO",
+	"borrow_TODO",
 	"mod",
 	"<",
 	">",
@@ -521,10 +559,12 @@ static const char *const operator_glsl_strs[] = {
 	"packHalf2x16_split_TODO",
 	"bfm_TODO",
 	"uboloadTODO",
+	"ldexp_TODO",
 	"vectorExtract_TODO",
 	"fma",
 	"clamp",
 	"mix",
+	"csel_TODO",
 	"bfi_TODO",
 	"bitfield_extract_TODO",
 	"vector_insert_TODO",
@@ -558,6 +598,9 @@ static bool is_binop_func_like(ir_expression_operation op, const glsl_type* type
 
 void ir_print_glsl_visitor::visit(ir_expression *ir)
 {
+	++this->expression_depth;
+	newline_indent();
+	
 	if (ir->get_num_operands() == 1) {
 		if (ir->operation >= ir_unop_f2i && ir->operation < ir_unop_any) {
 			buffer = print_type(buffer, ir->type, true);
@@ -633,6 +676,9 @@ void ir_print_glsl_visitor::visit(ir_expression *ir)
 			ir->operands[2]->accept(this);
 		ralloc_asprintf_append (&buffer, ")");
 	}
+	
+	newline_deindent();
+	--this->expression_depth;
 }
 
 // [glsl_sampler_dim]
@@ -651,7 +697,7 @@ void ir_print_glsl_visitor::visit(ir_texture *ir)
 	const int uv_dim = uv_type->vector_elements;
 	int sampler_uv_dim = tex_sampler_dim_size[sampler_dim];
 	if (is_shadow)
-		sampler_uv_dim = 3;
+		sampler_uv_dim += 1;
 	const bool is_proj = (uv_dim > sampler_uv_dim);
 
     // texture function name

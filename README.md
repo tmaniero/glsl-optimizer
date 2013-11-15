@@ -15,7 +15,7 @@ compiler; all this library does is spits out optimized GLSL back, and adds GLES 
 handling to the optimizer.
 
 This GLSL optimizer is made for [Unity's](http://unity3d.com/) purposes and is built-in
-in [Unity 3](http://unity3d.com/unity/whats-new/unity-3) and later.
+starting with Unity 3.0.
 
 GLSL Optimizer is licensed according to the terms of the MIT license.
 
@@ -23,8 +23,8 @@ GLSL Optimizer is licensed according to the terms of the MIT license.
 Usage
 -----
 
-Visual Studio 2010 (Windows, x86/x64) and Xcode 4.5+ (Mac, i386) project files for a static
-library are provided in `projects/vs2010/glsl_optimizer.sln` and `projects/xcode4/glsl_optimizer_lib`
+Visual Studio 2010 (Windows, x86/x64) and Xcode 5+ (Mac, i386) project files for a static
+library are provided in `projects/vs2010/glsl_optimizer.sln` and `projects/xcode5/glsl_optimizer_lib`
 respectively.
 
 For Linux you can use cmake. Just type "cmake . && make" in the root directory.
@@ -49,7 +49,7 @@ Tests
 -----
 
 There's a testing suite for catching regressions, see `tests` folder. In VS, build
-and run `glsl_optimizer_tests` project; in Xcode use `projects/xcode4/glsl_optimizer_tests`
+and run `glsl_optimizer_tests` project; in Xcode use `projects/xcode5/glsl_optimizer_tests`
 project. The test executable requires path to the `tests` folder as an argument.
 
 Each test comes as three text files; input, expected IR dump and expected optimized
@@ -83,5 +83,5 @@ Rebuilding flex/bison parsers:
 
 * When .y/.l files are changed, the parsers are *not* rebuilt automatically,
 * Run ./generateParsers.sh to do that. You'll need bison & flex (on Mac, do "Install Command Line Tools" from Xcode)
-* I use bison 2.3 and flex 2.5.35 (in OS X 10.8)
+* I use bison 2.3 and flex 2.5.35 (in OS X 10.8/10.9)
 

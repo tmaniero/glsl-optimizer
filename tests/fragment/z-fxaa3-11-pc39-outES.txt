@@ -62,13 +62,15 @@ void main ()
   highp float tmpvar_31;
   tmpvar_31 = max (max (rgba_26.w, rgba_30.w), max (rgba_23.w, max (rgba_19.w, rgbyM_14.w)));
   highp float tmpvar_32;
-  tmpvar_32 = (tmpvar_31 - min (min (rgba_26.w, rgba_30.w), min (rgba_23.w, min (rgba_19.w, rgbyM_14.w))));
+  tmpvar_32 = (tmpvar_31 - min (min (rgba_26.w, rgba_30.w), min (rgba_23.w, 
+    min (rgba_19.w, rgbyM_14.w)
+  )));
   if ((tmpvar_32 < max (0.0833, (tmpvar_31 * 0.166)))) {
     tmpvar_2 = rgbyM_14;
   } else {
     highp vec4 tmpvar_33;
     tmpvar_33.zw = vec2(0.0, 0.0);
-    tmpvar_33.xy = (xlv_TEXCOORD0 + (vec2(-1.0, -1.0) * _MainTex_TexelSize.xy));
+    tmpvar_33.xy = (xlv_TEXCOORD0 - _MainTex_TexelSize.xy);
     lowp vec4 tmpvar_34;
     tmpvar_34 = texture2DLodEXT (_MainTex, tmpvar_33.xy, 0.0);
     highp vec4 rgba_35;
@@ -106,7 +108,19 @@ void main ()
     tmpvar_49 = (rgba_35.w + rgba_44.w);
     lengthSign_11 = fxaaQualityRcpFrame_1.x;
     bool tmpvar_50;
-    tmpvar_50 = ((abs(((-2.0 * rgba_30.w) + tmpvar_49)) + ((abs(((-2.0 * rgbyM_14.w) + tmpvar_45)) * 2.0) + abs(((-2.0 * rgba_23.w) + tmpvar_48)))) >= (abs(((-2.0 * rgba_19.w) + (rgba_44.w + rgba_38.w))) + ((abs(((-2.0 * rgbyM_14.w) + tmpvar_46)) * 2.0) + abs(((-2.0 * rgba_26.w) + (rgba_35.w + rgba_41.w))))));
+    tmpvar_50 = ((abs(
+      ((-2.0 * rgba_30.w) + tmpvar_49)
+    ) + (
+      (abs(((-2.0 * rgbyM_14.w) + tmpvar_45)) * 2.0)
+     + 
+      abs(((-2.0 * rgba_23.w) + tmpvar_48))
+    )) >= (abs(
+      ((-2.0 * rgba_19.w) + (rgba_44.w + rgba_38.w))
+    ) + (
+      (abs(((-2.0 * rgbyM_14.w) + tmpvar_46)) * 2.0)
+     + 
+      abs(((-2.0 * rgba_26.w) + (rgba_35.w + rgba_41.w)))
+    )));
     highp float tmpvar_51;
     tmpvar_51 = (((tmpvar_45 + tmpvar_46) * 2.0) + (tmpvar_49 + tmpvar_48));
     if (!(tmpvar_50)) {
@@ -200,7 +214,7 @@ void main ()
       posN_8.y = (posN_8.y - tmpvar_60);
     };
     bool tmpvar_74;
-    tmpvar_74 = (!(tmpvar_72) || !(tmpvar_73));
+    tmpvar_74 = !((tmpvar_72 && tmpvar_73));
     if (!(tmpvar_73)) {
       posP_7.x = (posP_7.x + tmpvar_59);
     };
@@ -239,7 +253,7 @@ void main ()
         posN_8.y = (posN_8.y - tmpvar_60);
       };
       bool tmpvar_81;
-      tmpvar_81 = (!(tmpvar_79) || !(tmpvar_80));
+      tmpvar_81 = !((tmpvar_79 && tmpvar_80));
       if (!(tmpvar_80)) {
         posP_7.x = (posP_7.x + tmpvar_59);
       };
@@ -278,7 +292,7 @@ void main ()
           posN_8.y = (posN_8.y - tmpvar_60);
         };
         bool tmpvar_88;
-        tmpvar_88 = (!(tmpvar_86) || !(tmpvar_87));
+        tmpvar_88 = !((tmpvar_86 && tmpvar_87));
         if (!(tmpvar_87)) {
           posP_7.x = (posP_7.x + tmpvar_59);
         };
@@ -317,7 +331,7 @@ void main ()
             posN_8.y = (posN_8.y - tmpvar_60);
           };
           bool tmpvar_95;
-          tmpvar_95 = (!(tmpvar_93) || !(tmpvar_94));
+          tmpvar_95 = !((tmpvar_93 && tmpvar_94));
           if (!(tmpvar_94)) {
             posP_7.x = (posP_7.x + tmpvar_59);
           };
@@ -356,7 +370,7 @@ void main ()
               posN_8.y = (posN_8.y - (tmpvar_60 * 1.5));
             };
             bool tmpvar_102;
-            tmpvar_102 = (!(tmpvar_100) || !(tmpvar_101));
+            tmpvar_102 = !((tmpvar_100 && tmpvar_101));
             if (!(tmpvar_101)) {
               posP_7.x = (posP_7.x + (tmpvar_59 * 1.5));
             };
@@ -395,7 +409,7 @@ void main ()
                 posN_8.y = (posN_8.y - (tmpvar_60 * 2.0));
               };
               bool tmpvar_109;
-              tmpvar_109 = (!(tmpvar_107) || !(tmpvar_108));
+              tmpvar_109 = !((tmpvar_107 && tmpvar_108));
               if (!(tmpvar_108)) {
                 posP_7.x = (posP_7.x + (tmpvar_59 * 2.0));
               };
@@ -434,7 +448,7 @@ void main ()
                   posN_8.y = (posN_8.y - (tmpvar_60 * 2.0));
                 };
                 bool tmpvar_116;
-                tmpvar_116 = (!(tmpvar_114) || !(tmpvar_115));
+                tmpvar_116 = !((tmpvar_114 && tmpvar_115));
                 if (!(tmpvar_115)) {
                   posP_7.x = (posP_7.x + (tmpvar_59 * 2.0));
                 };
@@ -473,7 +487,7 @@ void main ()
                     posN_8.y = (posN_8.y - (tmpvar_60 * 2.0));
                   };
                   bool tmpvar_123;
-                  tmpvar_123 = (!(tmpvar_121) || !(tmpvar_122));
+                  tmpvar_123 = !((tmpvar_121 && tmpvar_122));
                   if (!(tmpvar_122)) {
                     posP_7.x = (posP_7.x + (tmpvar_59 * 2.0));
                   };
@@ -512,7 +526,7 @@ void main ()
                       posN_8.y = (posN_8.y - (tmpvar_60 * 2.0));
                     };
                     bool tmpvar_130;
-                    tmpvar_130 = (!(tmpvar_128) || !(tmpvar_129));
+                    tmpvar_130 = !((tmpvar_128 && tmpvar_129));
                     if (!(tmpvar_129)) {
                       posP_7.x = (posP_7.x + (tmpvar_59 * 2.0));
                     };
@@ -551,7 +565,7 @@ void main ()
                         posN_8.y = (posN_8.y - (tmpvar_60 * 4.0));
                       };
                       bool tmpvar_137;
-                      tmpvar_137 = (!(tmpvar_135) || !(tmpvar_136));
+                      tmpvar_137 = !((tmpvar_135 && tmpvar_136));
                       if (!(tmpvar_136)) {
                         posP_7.x = (posP_7.x + (tmpvar_59 * 4.0));
                       };

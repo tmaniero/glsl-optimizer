@@ -31,8 +31,7 @@ link_function_calls(gl_shader_program *prog, gl_shader *main,
 		    gl_shader **shader_list, unsigned num_shaders);
 
 extern void
-link_invalidate_variable_locations(gl_shader *sh, enum ir_variable_mode mode,
-				   int generic_base);
+link_invalidate_variable_locations(exec_list *ir);
 
 extern void
 link_assign_uniform_locations(struct gl_shader_program *prog);
@@ -69,6 +68,14 @@ void
 validate_interstage_interface_blocks(struct gl_shader_program *prog,
                                      const gl_shader *producer,
                                      const gl_shader *consumer);
+
+extern void
+link_assign_atomic_counter_resources(struct gl_context *ctx,
+                                     struct gl_shader_program *prog);
+
+extern void
+link_check_atomic_counter_resources(struct gl_context *ctx,
+                                    struct gl_shader_program *prog);
 
 /**
  * Class for processing all of the leaf fields of a variable that corresponds
