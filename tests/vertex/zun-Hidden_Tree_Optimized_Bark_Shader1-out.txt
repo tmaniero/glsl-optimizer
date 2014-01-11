@@ -56,3 +56,5 @@ void main ()
   gl_Position = tmpvar_1;
 }
 
+
+// inputs: 4, stats: 43 alu 0 tex 1 flow

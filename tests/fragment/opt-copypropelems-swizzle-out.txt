@@ -11,3 +11,5 @@ void main ()
   gl_FragColor = v_1;
 }
 
+
+// inputs: 1, stats: 1 alu 1 tex 0 flow

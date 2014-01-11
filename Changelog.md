@@ -1,6 +1,28 @@
 GLSL optimizer Change Log
 =========================
 
+2014 01
+-------
+
+Goodies:
+
+* More OpenGL ES 2.0 conformant printing of complex for-loops (loop inductions printed
+  as += or ++; loop initializers inside loop body).
+
+2013 12
+-------
+
+Goodies:
+
+* Optimized performance; was spending half of the time in stupid string code.
+* Added glslopt_shader_get_stats to get *very* approximate shader complexity stats.
+* Nicer printing of complicated for-loops.
+
+Fixes:
+
+* Fixed printing of struct initializers.
+
+
 2013 11
 -------
 

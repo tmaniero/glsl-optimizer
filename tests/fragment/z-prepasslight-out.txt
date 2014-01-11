@@ -101,3 +101,5 @@ void main ()
   gl_FragData[0] = exp2(-(tmpvar_20));
 }
 
+
+// inputs: 2, stats: 62 alu 8 tex 4 flow

@@ -18,3 +18,5 @@ void main ()
   gl_FragData[0] = (tmpvar_3 - (tmpvar_3.yzww * 0.00392157));
 }
 
+
+// inputs: 1, stats: 10 alu 2 tex 1 flow

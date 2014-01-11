@@ -168,3 +168,5 @@ void main ()
   gl_FragData[0] = tmpvar_36;
 }
 
+
+// inputs: 6, stats: 146 alu 12 tex 0 flow

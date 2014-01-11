@@ -30,3 +30,5 @@ void main ()
   gl_FragData[0] = col_2;
 }
 
+
+// inputs: 1, stats: 14 alu 4 tex 0 flow

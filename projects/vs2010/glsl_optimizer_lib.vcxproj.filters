@@ -171,6 +171,9 @@
     <ClInclude Include="..\..\src\glsl\builtin_type_macros.h">
       <Filter>src\glsl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\glsl\ir_stats.h">
+      <Filter>src\glsl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\glsl\ast_expr.cpp">
@@ -222,6 +225,9 @@
       <Filter>src\glsl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\glsl\ir_constant_expression.cpp">
+      <Filter>src\glsl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\glsl\ir_equals.cpp">
       <Filter>src\glsl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\glsl\ir_expression_flattening.cpp">
@@ -462,6 +468,9 @@
       <Filter>src\glsl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\glsl\opt_flip_matrices.cpp">
+      <Filter>src\glsl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\glsl\ir_stats.cpp">
       <Filter>src\glsl</Filter>
     </ClCompile>
   </ItemGroup>

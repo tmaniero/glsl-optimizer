@@ -7,7 +7,6 @@ void main ()
   vec2 rcpFrame_1;
   rcpFrame_1 = _MainTex_TexelSize.xy;
   vec3 tmpvar_2;
-  int i_3;
   bool doneP_4;
   bool doneN_5;
   float lumaEndP_6;
@@ -21,7 +20,6 @@ void main ()
   float lumaN_14;
   doneN_5 = bool(0);
   doneP_4 = bool(0);
-  i_3 = 0;
   vec4 tmpvar_15;
   tmpvar_15.zw = vec2(0.0, 0.0);
   tmpvar_15.xy = (xlv_TEXCOORD0 + (vec2(0.0, -1.0) * _MainTex_TexelSize.xy));
@@ -189,10 +187,7 @@ void main ()
     posN_10 = (posN_10 + (tmpvar_54 * vec2(-2.0, -2.0)));
     posP_9 = (posP_9 + (tmpvar_54 * vec2(2.0, 2.0)));
     offNP_8 = (tmpvar_54 * vec2(3.0, 3.0));
-    while (true) {
-      if ((i_3 >= 4)) {
-        break;
-      };
+    for (int i_3; i_3 < 4; i_3++) {
       if (!(doneN_5)) {
         vec4 tmpvar_57;
         tmpvar_57 = texture2DGradARB (_MainTex, posN_10, offNP_8, offNP_8);
@@ -226,7 +221,6 @@ void main ()
       if (!(tmpvar_60)) {
         posP_9 = (posP_9 + offNP_8);
       };
-      i_3 = (i_3 + 1);
     };
     float tmpvar_61;
     if (tmpvar_46) {
@@ -293,3 +287,5 @@ void main ()
   gl_FragData[0] = tmpvar_73;
 }
 
+
+// inputs: 1, stats: 194 alu 12 tex 26 flow
