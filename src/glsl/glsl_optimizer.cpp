@@ -384,6 +384,10 @@ glslopt_shader* glslopt_optimize (glslopt_ctx* ctx, glslopt_shader_type type, co
 		shader->status = false;
 		return shader;
 	}
+
+    // tmaniero
+    unsigned int printFlags = 0;
+    printFlags |= (options & kGlslOptionNoStruct) ? kPrintGlslNoStruct : 0;
 	
 	_mesa_glsl_parse_state* state = new (shader) _mesa_glsl_parse_state (&ctx->mesa_ctx, shader->shader->Stage, shader);
 	state->error = 0;
@@ -412,7 +416,7 @@ glslopt_shader* glslopt_optimize (glslopt_ctx* ctx, glslopt_shader_type type, co
 	// Un-optimized output
 	if (!state->error) {
 		validate_ir_tree(ir);
-		shader->rawOutput = _mesa_print_ir_glsl(ir, state, ralloc_strdup(shader, ""), printMode);
+		shader->rawOutput = _mesa_print_ir_glsl(ir, state, ralloc_strdup(shader, ""), static_cast<PrintGlslMode>(printMode | printFlags));
 	}
 	
 	// Link built-in functions
@@ -450,7 +454,7 @@ glslopt_shader* glslopt_optimize (glslopt_ctx* ctx, glslopt_shader_type type, co
 	// Final optimized output
 	if (!state->error)
 	{
-		shader->optimizedOutput = _mesa_print_ir_glsl(ir, state, ralloc_strdup(shader, ""), printMode);
+        shader->optimizedOutput = _mesa_print_ir_glsl(ir, state, ralloc_strdup(shader, ""), static_cast<PrintGlslMode>(printMode | printFlags) );
 	}
 
 	shader->status = !state->error;
@@ -463,8 +467,8 @@ glslopt_shader* glslopt_optimize (glslopt_ctx* ctx, glslopt_shader_type type, co
 	ralloc_free (ir);
 	ralloc_free (state);
 
-	if (linked_shader)
-		ralloc_free(linked_shader);
+    if (linked_shader)
+        ralloc_free(linked_shader);
 
 	return shader;
 }

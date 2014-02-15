@@ -32,6 +32,11 @@ enum PrintGlslMode {
 	kPrintGlslNone = 0,
 	kPrintGlslVertex,
 	kPrintGlslFragment,
+
+    // tmaniero
+    kPrintGlslMaskMode = 0x00FFF,
+    kPrintGlslMaskFlags = 0xFF000,
+    kPrintGlslNoStruct = 0x1000
 };
 
 extern char* _mesa_print_ir_glsl(exec_list *instructions,

@@ -33,6 +33,9 @@ enum glslopt_shader_type {
 enum glslopt_options {
 	kGlslOptionSkipPreprocessor = (1<<0), // Skip preprocessing shader source. Saves some time if you know you don't need it.
 	kGlslOptionNotFullShader = (1<<1), // Passed shader is not the full shader source. This makes some optimizations weaker.
+
+    // tmaniero
+    kGlslOptionNoStruct = (1<<2), // trasform struct into simple var
 };
 
 // Optimizer target language
