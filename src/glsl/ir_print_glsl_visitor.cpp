@@ -449,7 +449,7 @@ void ir_print_glsl_visitor::visit(ir_variable *ir)
    if ((this->flags & kPrintGlslNoStruct) && is_struct_type(ir->type))
    {
         char pre[512];
-        sprintf(pre, "%s%s%s%s", cent, inv, interp[ir->interpolation], mode[decormode][ir->mode]);
+        sprintf(pre, "%s%s%s%s", cent, inv, interp[ir->data.interpolation], mode[decormode][ir->data.mode]);
 //TODO
         print_struct_type(buffer, pre, ir, ir->type, this);
    }
